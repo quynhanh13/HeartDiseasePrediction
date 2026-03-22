@@ -1,0 +1,8 @@
+flask
+flask-sqlalchemy
+pandas
+scikit-learn
+numpy
+joblib
+jupyter
+plotly

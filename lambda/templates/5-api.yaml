@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HDPS (5/6) - API Gateway + Cognito (imports from stack 4)'
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+
+  DeploymentVersion:
+    Type: String
+    Default: v1
+
+Resources:
+  PredictionApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Join ["-", [!Ref EnvironmentName, "heart-api"]]
+
+  PredictionResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ParentId: !GetAtt PredictionApi.RootResourceId
+      PathPart: predict
+
+  StatsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ParentId: !GetAtt PredictionApi.RootResourceId
+      PathPart: stats
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+
+  CognitoAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      Type: COGNITO_USER_POOLS
+      ProviderARNs:
+        - !GetAtt CognitoUserPool.Arn
+      Name: CognitoAuth
+      IdentitySource: method.request.header.Authorization
+
+  PredictionMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: CognitoAuthorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PredictionResource
+      HttpMethod: POST
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PredictionOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PredictionResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  StatsMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: CognitoAuthorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref StatsResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  StatsOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref StatsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PatientsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ParentId: !GetAtt PredictionApi.RootResourceId
+      PathPart: patients
+
+  PatientsListMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: CognitoAuthorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PatientsResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PatientsListOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PatientsResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PatientByIdResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ParentId: !Ref PatientsResource
+      PathPart: "{patientId}"
+
+  PatientGetMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: CognitoAuthorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PatientByIdResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PatientPutMethod:
+    Type: AWS::ApiGateway::Method
+    DependsOn: CognitoAuthorizer
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PatientByIdResource
+      HttpMethod: PUT
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref CognitoAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  PatientOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PredictionApi
+      ResourceId: !Ref PatientByIdResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub
+          - 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${LambdaFunctionArn}/invocations'
+          - { LambdaFunctionArn: !ImportValue hdps-LambdaArn }
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - PredictionMethod
+      - PredictionOptionsMethod
+      - StatsMethod
+      - StatsOptionsMethod
+      - PatientsListMethod
+      - PatientsListOptionsMethod
+      - PatientGetMethod
+      - PatientPutMethod
+      - PatientOptionsMethod
+    Properties:
+      RestApiId: !Ref PredictionApi
+      StageName: prod
+      Description: !Sub 'Deployment ${DeploymentVersion}'
+
+  LambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !ImportValue hdps-LambdaArn
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+  ApiEndpoint:
+    Value: !Sub 'https://${PredictionApi}.execute-api.${AWS::Region}.amazonaws.com/prod'

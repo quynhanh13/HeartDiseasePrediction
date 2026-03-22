@@ -1,0 +1,36 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local runtime data
+instance/
+
+# Build and packaging artifacts
+build/
+dist/
+*.egg-info/
+*.zip
+
+# Lambda packaging directories (generated artifacts)
+lambda/deployment/
+lambda/deployment_linux/
+lambda/deployment_*/
+lambda/lambda-deployment.zip
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+.vscode/

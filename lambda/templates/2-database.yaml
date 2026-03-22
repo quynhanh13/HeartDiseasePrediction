@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HDPS (2/6) - RDS Database'
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+  PublicSubnet1Id:
+    Type: AWS::EC2::Subnet::Id
+
+  PublicSubnet2Id:
+    Type: AWS::EC2::Subnet::Id
+
+  DBUsername:
+    Type: String
+    Default: admin
+
+  DBPassword:
+    Type: String
+    NoEcho: true
+
+Resources:
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: DB SG
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.0.0/16
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: subnet group
+      SubnetIds:
+        - !Ref PublicSubnet1Id
+        - !Ref PublicSubnet2Id
+
+  PredictionDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceClass: db.t3.micro
+      Engine: mysql
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      AllocatedStorage: 20
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref DBSecurityGroup
+
+Outputs:
+  VpcId:
+    Value: !Ref VpcId
+    Export:
+      Name: hdps-VpcId
+
+  PublicSubnet1Id:
+    Value: !Ref PublicSubnet1Id
+    Export:
+      Name: hdps-PublicSubnet1Id
+
+  PublicSubnet2Id:
+    Value: !Ref PublicSubnet2Id
+    Export:
+      Name: hdps-PublicSubnet2Id
+
+  DBEndpointAddress:
+    Value: !GetAtt PredictionDB.Endpoint.Address
+    Export:
+      Name: hdps-DBEndpointAddress
+
+  DBEndpointPort:
+    Value: !GetAtt PredictionDB.Endpoint.Port
+    Export:
+      Name: hdps-DBEndpointPort
+
+  DBSecurityGroupId:
+    Value: !Ref DBSecurityGroup
+    Export:
+      Name: hdps-DBSecurityGroupId

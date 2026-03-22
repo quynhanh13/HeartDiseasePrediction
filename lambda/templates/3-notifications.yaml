@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HDPS (3/6) - SNS Notifications'
+
+Resources:
+  PredictionNotificationTopic:
+    Type: AWS::SNS::Topic
+
+Outputs:
+  SNSTopicArn:
+    Value: !Ref PredictionNotificationTopic
+    Export:
+      Name: hdps-SNSTopicArn

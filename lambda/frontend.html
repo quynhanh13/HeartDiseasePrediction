@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script
+        src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.1.0/dist/amazon-cognito-identity.min.js"></script>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1450.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --warning: #f59e0b;
+            --warning-light: #fef3c7;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 8px 24px rgba(0, 0, 0, .06);
+            --shadow-lg: 0 4px 12px rgba(0, 0, 0, .1), 0 20px 48px rgba(0, 0, 0, .08);
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 50%, #f0f9ff 100%);
+            margin: 0;
+            padding: 24px 16px;
+            min-height: 100vh;
+            color: var(--gray-800);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* ── Layout ── */
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #0ea5e9 100%);
+            color: white;
+            padding: 28px 36px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+        }
+
+        .header-icon {
+            width: 52px;
+            height: 52px;
+            background: rgba(255, 255, 255, .18);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            flex-shrink: 0;
+        }
+
+        .header-text h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -.3px;
+        }
+
+        .header-text p {
+            margin: 2px 0 0;
+            font-size: 13px;
+            opacity: .8;
+            font-weight: 400;
+        }
+
+        /* ── Auth Section ── */
+        .auth-section {
+            padding: 48px 36px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .auth-section h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin: 0 0 6px;
+        }
+
+        .auth-section .auth-subtitle {
+            color: var(--gray-500);
+            margin: 0 0 28px;
+            font-size: 13px;
+        }
+
+        /* ── Main App ── */
+        .form-section {
+            padding: 0;
+        }
+
+        /* ── Tab Navigation ── */
+        .tab-nav {
+            display: flex;
+            gap: 4px;
+            padding: 16px 24px 0;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .tab-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 18px;
+            border: none;
+            background: transparent;
+            color: var(--gray-500);
+            font-size: 13px;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color .15s, border-color .15s, background .15s;
+            width: auto;
+            margin-top: 0;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            background: var(--primary-light);
+            opacity: 1;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: #fff;
+            font-weight: 600;
+        }
+
+        .tab-icon {
+            font-size: 15px;
+        }
+
+        /* ── Tab Content ── */
+        .tab-content {
+            padding: 28px 32px;
+        }
+
+        /* ── Section Header ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            gap: 12px;
+        }
+
+        .section-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        /* ── Form Groups ── */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .form-card {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-card-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--gray-400);
+            margin: 0 0 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            color: var(--gray-700);
+            font-size: 13px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--gray-800);
+            background: #fff;
+            transition: border-color .15s, box-shadow .15s;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+            outline: none;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--gray-400);
+        }
+
+        /* ── Buttons ── */
+        button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            width: 100%;
+            margin-top: 4px;
+            transition: background .15s, transform .1s, box-shadow .15s;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, .25);
+        }
+
+        button:hover {
+            background: var(--primary-dark);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, .3);
+            opacity: 1;
+        }
+
+        button:active {
+            transform: scale(.98);
+        }
+
+        .btn-primary-full {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 15px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 50%;
+            right: 28px;
+            transform: translateY(-50%);
+            width: auto;
+            margin-top: 0;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            border-radius: 8px;
+            box-shadow: none;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            box-shadow: none;
+        }
+
+        .result {
+            margin-top: 16px;
+            padding: 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid transparent;
+            font-size: 13px;
+        }
+
+        .result.success {
+            color: #065f46;
+            background: #d1fae5;
+            border-color: #6ee7b7;
+        }
+
+        .result.error {
+            color: #7f1d1d;
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .btn-sm {
+            width: auto;
+            margin-top: 0;
+            padding: 7px 12px;
+            font-size: 12px;
+            line-height: 1.2;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: var(--gray-300);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-400);
+            box-shadow: none;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-light);
+            box-shadow: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .stat-card.total {
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card.low {
+            border-left: 4px solid var(--success);
+        }
+
+        .stat-card.medium {
+            border-left: 4px solid var(--warning);
+        }
+
+        .stat-card.high {
+            border-left: 4px solid var(--danger);
+        }
+
+        .stat-card.misc {
+            border-left: 4px solid var(--gray-400);
+        }
+
+        .stat-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-800);
+            line-height: 1.2;
+        }
+
+        .stats-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .stats-table th,
+        .stats-table td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--gray-200);
+            font-size: 13px;
+        }
+
+        .stats-table th {
+            font-size: 11px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            background: var(--gray-50);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-low {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-medium {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-high {
+            background: #fee2e2;
+            color: #7f1d1d;
+        }
+
+        .risk-result {
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .risk-result.low {
+            background: #d1fae5;
+            border-color: #6ee7b7;
+        }
+
+        .risk-result.medium {
+            background: #fef3c7;
+            border-color: #fcd34d;
+        }
+
+        .risk-result.high {
+            background: #fee2e2;
+            border-color: #fca5a5;
+        }
+
+        .risk-badge {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex: 0 0 auto;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .risk-info h4 {
+            margin: 0 0 2px;
+            font-size: 16px;
+        }
+
+        .risk-info p {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        @media (max-width: 768px) {
+            .logout-btn {
+                right: 16px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .tab-content {
+                padding: 20px 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-icon">🫀</div>
+            <div class="header-text">
+                <h1>Heart Disease Prediction System</h1>
+                <p>Secure AI-powered clinical assessment platform</p>
+            </div>
+            <button class="logout-btn hidden" id="logout-btn" onclick="logout()">Sign Out</button>
+        </div>
+
+        <!-- Authentication Section -->
+        <div id="auth-section" class="auth-section">
+            <h3>Welcome back, Doctor</h3>
+            <p class="auth-subtitle">Sign in to access patient records and predictions</p>
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter your username" autocomplete="username">
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
+            </div>
+            <button class="btn-primary-full" onclick="login()">Sign In</button>
+            <div id="auth-message" style="margin-top:16px;"></div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="app-section" class="hidden">
+            <div class="form-section">
+                <!-- Tab Navigation -->
+                <nav class="tab-nav">
+                    <button id="predict-tab-btn" class="tab-btn active" type="button" onclick="showPredictionView()">
+                        <span class="tab-icon">🩺</span> Prediction
+                    </button>
+                    <button id="stats-tab-btn" class="tab-btn" type="button" onclick="showStatsView()">
+                        <span class="tab-icon">📊</span> Statistics
+                    </button>
+                    <button id="patients-tab-btn" class="tab-btn" type="button" onclick="showPatientView()">
+                        <span class="tab-icon">👥</span> Patients
+                    </button>
+                </nav>
+
+                <!-- Prediction View -->
+                <div id="prediction-view" class="tab-content">
+                    <div class="section-header">
+                        <h3>Patient Health Assessment</h3>
+                    </div>
+                    <form id="prediction-form">
+                        <div class="form-card">
+                            <p class="form-card-title">Demographics</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="age">Age</label>
+                                    <input type="number" id="age" name="age" required min="1" max="120"
+                                        placeholder="e.g. 55">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sex">Gender</label>
+                                    <select id="sex" name="sex" required>
+                                        <option value="">Select Gender</option>
+                                        <option value="0">Female</option>
+                                        <option value="1">Male</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="cp">Chest Pain Type</label>
+                                    <select id="cp" name="cp" required>
+                                        <option value="">Select Type</option>
+                                        <option value="0">Typical Angina</option>
+                                        <option value="1">Atypical Angina</option>
+                                        <option value="2">Non-anginal Pain</option>
+                                        <option value="3">Asymptomatic</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-card">
+                            <p class="form-card-title">Vital Signs</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="trestbps">Resting Blood Pressure (mmHg)</label>
+                                    <input type="number" id="trestbps" name="trestbps" required min="80" max="200"
+                                        placeholder="e.g. 120">
+                                </div>
+                                <div class="form-group">
+                                    <label for="chol">Serum Cholesterol (mg/dl)</label>
+                                    <input type="number" id="chol" name="chol" required min="100" max="600"
+                                        placeholder="e.g. 200">
+                                </div>
+                                <div class="form-group">
+                                    <label for="fbs">Fasting Blood Sugar &gt; 120 mg/dl</label>
+                                    <select id="fbs" name="fbs" required>
+                                        <option value="">Select</option>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-card">
+                            <p class="form-card-title">Clinical Tests</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="restecg">Resting ECG Results</label>
+                                    <select id="restecg" name="restecg" required>
+                                        <option value="">Select</option>
+                                        <option value="0">Normal</option>
+                                        <option value="1">ST-T Wave Abnormality</option>
+                                        <option value="2">Left Ventricular Hypertrophy</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="thalach">Max Heart Rate Achieved</label>
+                                    <input type="number" id="thalach" name="thalach" required min="60" max="220"
+                                        placeholder="e.g. 150">
+                                </div>
+                                <div class="form-group">
+                                    <label for="exang">Exercise Induced Angina</label>
+                                    <select id="exang" name="exang" required>
+                                        <option value="">Select</option>
+                                        <option value="0">No</option>
+                                        <option value="1">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-card">
+                            <p class="form-card-title">Patient</p>
+                            <div class="form-group">
+                                <label for="patient-id">Select Patient</label>
+                                <div class="patient-select-row">
+                                    <select id="patient-id" name="patient_id" required>
+                                        <option value="">Loading patients...</option>
+                                    </select>
+                                    <button type="button" class="btn-sm btn-secondary"
+                                        onclick="loadPatientOptionsForPrediction()">↺ Refresh</button>
+                                </div>
+                                <p id="patient-id-hint" style="margin:6px 0 0;font-size:12px;color:var(--gray-400);">
+                                    Select an existing patient or choose "+ Add new patient..."</p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary-full">🔍 Predict Heart Disease Risk</button>
+                    </form>
+                    <div id="result" class="hidden"></div>
+                </div>
+
+                <!-- Statistics View -->
+                <div id="stats-view" class="tab-content hidden">
+                    <div class="section-header">
+                        <h3>Prediction Statistics</h3>
+                        <button type="button" class="btn-sm btn-outline" onclick="loadStatistics()">↺ Refresh</button>
+                    </div>
+                    <div id="stats-summary" class="stats-grid"></div>
+                    <div class="chart-container">
+                        <h4>Risk Distribution</h4>
+                        <canvas id="risk-chart" height="100"></canvas>
+                    </div>
+                    <h4 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--gray-700);">Latest Predictions
+                    </h4>
+                    <div style="overflow-x:auto;border:1px solid var(--gray-200);border-radius:var(--radius-sm);">
+                        <table class="stats-table">
+                            <thead>
+                                <tr>
+                                    <th>Prediction ID</th>
+                                    <th>Patient</th>
+                                    <th>Outcome</th>
+                                    <th>Probability</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="latest-table-body"></tbody>
+                        </table>
+                    </div>
+                    <div id="stats-message" class="result hidden" style="margin-top:16px;"></div>
+                </div>
+
+                <!-- Patients View -->
+                <div id="patient-view" class="tab-content hidden">
+                    <!-- List panel -->
+                    <div id="patient-list-panel">
+                        <div class="patient-list-header">
+                            <h3 class="section-title">Patient Records</h3>
+                            <div style="display:flex;gap:8px;">
+                                <button type="button" class="btn-sm" onclick="showPatientDetail(null, true)">+ New
+                                    Patient</button>
+                                <button type="button" class="btn-sm btn-secondary" onclick="loadPatientList()">↺
+                                    Refresh</button>
+                            </div>
+                        </div>
+                        <div id="patient-list-loading" class="loading-text">Loading patients...</div>
+                        <div style="overflow-x:auto;border:1px solid var(--gray-200);border-radius:var(--radius-sm);">
+                            <table class="stats-table hidden" id="patient-list-table">
+                                <thead>
+                                    <tr>
+                                        <th>Patient ID</th>
+                                        <th>Name</th>
+                                        <th>Gender</th>
+                                        <th>Contact</th>
+                                        <th>Last Updated</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="patient-list-body"></tbody>
+                            </table>
+                        </div>
+                        <div id="patient-list-message" class="result hidden" style="margin-top:12px;"></div>
+                    </div>
+
+                    <!-- Detail / Edit panel -->
+                    <div id="patient-detail-panel" class="hidden">
+                        <div class="detail-back-bar">
+                            <button type="button" class="btn-sm btn-secondary" onclick="showPatientList()">← Back to
+                                List</button>
+                            <h3 class="section-title" id="patient-detail-title">Patient Details</h3>
+                        </div>
+                        <div class="form-card">
+                            <p class="form-card-title">Identification</p>
+                            <div class="form-group">
+                                <label>Patient ID <span style="color:var(--danger)">*</span></label>
+                                <input type="text" id="patient-search-id" placeholder="e.g. P001">
+                            </div>
+                        </div>
+                        <div class="form-card">
+                            <p class="form-card-title">Personal Information</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Full Name</label>
+                                    <input type="text" id="pt-name" placeholder="Patient full name">
+                                </div>
+                                <div class="form-group">
+                                    <label>Date of Birth</label>
+                                    <input type="date" id="pt-dob">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Gender</label>
+                                    <select id="pt-gender">
+                                        <option value="">Select</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Contact Number</label>
+                                    <input type="text" id="pt-contact" placeholder="+1 555-0000">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-card">
+                            <p class="form-card-title">Contact &amp; Notes</p>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Email</label>
+                                    <input type="email" id="pt-email" placeholder="patient@email.com">
+                                </div>
+                                <div class="form-group">
+                                    <label>Address</label>
+                                    <input type="text" id="pt-address" placeholder="City, Country">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Medical Notes</label>
+                                <textarea id="pt-notes" rows="4"
+                                    placeholder="Clinical observations, allergies, medications..."></textarea>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-primary-full" onclick="savePatient()">💾 Save Patient
+                            Info</button>
+                        <div id="patient-message" class="result hidden" style="margin-top:16px;"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AWS Configuration - Replace with your actual values
+        const AWS_REGION = 'us-east-1';
+        const USER_POOL_ID = 'us-east-1_PIAIdtBxQ';
+        const USER_POOL_CLIENT_ID = '5ta00pn6enonds5jkabh7v99hb';
+        const API_ENDPOINT = 'https://p7b7axfksk.execute-api.us-east-1.amazonaws.com/prod';
+
+        // Initialize AWS SDK
+        AWS.config.region = AWS_REGION;
+
+        // Initialize Cognito User Pool
+        const poolData = {
+            UserPoolId: USER_POOL_ID,
+            ClientId: USER_POOL_CLIENT_ID
+        };
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+
+        let cognitoUser = null;
+        let idToken = null;
+        let riskChart = null;
+
+        // Login function
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showMessage('auth-message', 'Please enter username and password', 'error');
+                return;
+            }
+
+            const authenticationData = {
+                Username: username,
+                Password: password
+            };
+
+            const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails(authenticationData);
+
+            const userData = {
+                Username: username,
+                Pool: userPool
+            };
+
+            cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+            try {
+                const result = await authenticateUser(cognitoUser, authenticationDetails);
+                idToken = result.getIdToken().getJwtToken();
+
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('logout-btn').classList.remove('hidden');
+                showPredictionView();
+                await loadPatientOptionsForPrediction();
+            } catch (error) {
+                showMessage('auth-message', `Login failed: ${error.message}`, 'error');
+            }
+        }
+
+        function setActiveTab(tab) {
+            ['predict', 'stats', 'patients'].forEach(t => {
+                document.getElementById(`${t}-tab-btn`).classList.toggle('active', t === tab);
+            });
+        }
+
+        function showPredictionView() {
+            document.getElementById('prediction-view').classList.remove('hidden');
+            document.getElementById('stats-view').classList.add('hidden');
+            document.getElementById('patient-view').classList.add('hidden');
+            setActiveTab('predict');
+            loadPatientOptionsForPrediction();
+        }
+
+        async function loadPatientOptionsForPrediction() {
+            const select = document.getElementById('patient-id');
+            if (!select || !idToken) {
+                return;
+            }
+
+            select.innerHTML = '<option value="">Loading patients...</option>';
+            try {
+                const response = await fetch(`${API_ENDPOINT}/patients`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    select.innerHTML = '<option value="">Unable to load patients</option>';
+                    return;
+                }
+
+                const patients = data.patients || [];
+                const options = ['<option value="">Select patient</option>'];
+                patients.forEach(p => {
+                    const pid = escHtml(p.patient_id);
+                    const label = escHtml(p.name || p.patient_id);
+                    options.push(`<option value="${pid}">${label} (${pid})</option>`);
+                });
+                options.push('<option value="__new__">+ Add new patient...</option>');
+                select.innerHTML = options.join('');
+            } catch (error) {
+                select.innerHTML = '<option value="">Network error while loading patients</option>';
+            }
+        }
+
+        function onPredictionPatientChange() {
+            const select = document.getElementById('patient-id');
+            if (!select) {
+                return;
+            }
+            if (select.value === '__new__') {
+                showPatientView();
+                showPatientDetail(null, true);
+            }
+        }
+
+        async function showStatsView() {
+            document.getElementById('prediction-view').classList.add('hidden');
+            document.getElementById('stats-view').classList.remove('hidden');
+            document.getElementById('patient-view').classList.add('hidden');
+            setActiveTab('stats');
+            await loadStatistics();
+        }
+
+        function showPatientView() {
+            document.getElementById('prediction-view').classList.add('hidden');
+            document.getElementById('stats-view').classList.add('hidden');
+            document.getElementById('patient-view').classList.remove('hidden');
+            setActiveTab('patients');
+            showPatientList();
+            loadPatientList();
+        }
+
+        function showPatientList() {
+            document.getElementById('patient-list-panel').classList.remove('hidden');
+            document.getElementById('patient-detail-panel').classList.add('hidden');
+        }
+
+        async function loadPatientList() {
+            if (!idToken) return;
+            document.getElementById('patient-list-loading').classList.remove('hidden');
+            document.getElementById('patient-list-table').classList.add('hidden');
+            document.getElementById('patient-list-message').classList.add('hidden');
+            try {
+                const response = await fetch(`${API_ENDPOINT}/patients`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showMessage('patient-list-message', `Error: ${data.error || 'Failed to load patients'}`, 'error');
+                    document.getElementById('patient-list-loading').classList.add('hidden');
+                    return;
+                }
+                renderPatientList(data.patients || []);
+            } catch (error) {
+                showMessage('patient-list-message', `Network error: ${error.message}`, 'error');
+                document.getElementById('patient-list-loading').classList.add('hidden');
+            }
+        }
+
+        function escHtml(s) {
+            return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function renderPatientList(patients) {
+            document.getElementById('patient-list-loading').classList.add('hidden');
+            const table = document.getElementById('patient-list-table');
+            const tbody = document.getElementById('patient-list-body');
+            if (patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#6b7280;">No patients found. Click "+ New Patient" to add one.</td></tr>';
+            } else {
+                tbody.innerHTML = patients.map(p => {
+                    const updated = p.updated_at ? new Date(p.updated_at).toLocaleDateString() : '-';
+                    return `<tr>
+                        <td><code>${escHtml(p.patient_id)}</code></td>
+                        <td>${escHtml(p.name)}</td>
+                        <td>${escHtml(p.gender)}</td>
+                        <td>${escHtml(p.contact_number)}</td>
+                        <td>${updated}</td>
+                        <td><button class="btn-sm" type="button" data-pid="${escHtml(p.patient_id)}" onclick="showPatientDetail(this.getAttribute('data-pid'), false)">Edit</button></td>
+                    </tr>`;
+                }).join('');
+            }
+            table.classList.remove('hidden');
+        }
+
+        async function showPatientDetail(patientId, isNew) {
+            document.getElementById('patient-list-panel').classList.add('hidden');
+            document.getElementById('patient-detail-panel').classList.remove('hidden');
+            document.getElementById('patient-message').classList.add('hidden');
+            clearPatientForm();
+            const idField = document.getElementById('patient-search-id');
+            const title = document.getElementById('patient-detail-title');
+            if (isNew) {
+                idField.value = '';
+                idField.readOnly = false;
+                title.textContent = 'New Patient';
+                return;
+            }
+            idField.value = patientId;
+            idField.readOnly = true;
+            title.textContent = `Edit Patient: ${patientId}`;
+            try {
+                const response = await fetch(`${API_ENDPOINT}/patients/${encodeURIComponent(patientId)}`, {
+                    method: 'GET',
+                    headers: { 'Authorization': `Bearer ${idToken}` }
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showMessage('patient-message', `Error: ${data.error || 'Failed to load patient'}`, 'error');
+                    return;
+                }
+                document.getElementById('pt-name').value = data.name || '';
+                document.getElementById('pt-dob').value = data.date_of_birth || '';
+                document.getElementById('pt-gender').value = data.gender || '';
+                document.getElementById('pt-contact').value = data.contact_number || '';
+                document.getElementById('pt-email').value = data.email || '';
+                document.getElementById('pt-address').value = data.address || '';
+                document.getElementById('pt-notes').value = data.medical_notes || '';
+            } catch (error) {
+                showMessage('patient-message', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        // Authenticate user promise wrapper
+        function authenticateUser(cognitoUser, authenticationDetails) {
+            return new Promise((resolve, reject) => {
+                cognitoUser.authenticateUser(authenticationDetails, {
+                    onSuccess: resolve,
+                    onFailure: reject
+                });
+            });
+        }
+
+        function restoreSessionOnRefresh() {
+            const currentUser = userPool.getCurrentUser();
+            if (!currentUser) {
+                return;
+            }
+
+            currentUser.getSession((err, session) => {
+                if (err || !session || !session.isValid()) {
+                    return;
+                }
+
+                cognitoUser = currentUser;
+                idToken = session.getIdToken().getJwtToken();
+
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('app-section').classList.remove('hidden');
+                document.getElementById('logout-btn').classList.remove('hidden');
+                showPredictionView();
+                loadPatientOptionsForPrediction();
+            });
+        }
+
+        // Logout function
+        function logout() {
+            if (cognitoUser) {
+                cognitoUser.signOut();
+            }
+            idToken = null;
+            document.getElementById('auth-section').classList.remove('hidden');
+            document.getElementById('app-section').classList.add('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+            document.getElementById('prediction-form').reset();
+            document.getElementById('result').innerHTML = '';
+            document.getElementById('result').className = 'hidden';
+            document.getElementById('stats-summary').innerHTML = '';
+            document.getElementById('latest-table-body').innerHTML = '';
+            document.getElementById('stats-message').classList.add('hidden');
+            document.getElementById('patient-view').classList.add('hidden');
+            document.getElementById('patient-detail-panel').classList.add('hidden');
+            document.getElementById('patient-list-panel').classList.remove('hidden');
+            document.getElementById('patient-list-body').innerHTML = '';
+            document.getElementById('patient-search-id').value = '';
+            document.getElementById('patient-search-id').readOnly = false;
+            document.getElementById('patient-message').classList.add('hidden');
+            clearPatientForm();
+            const patientSelect = document.getElementById('patient-id');
+            if (patientSelect) {
+                patientSelect.innerHTML = '<option value="">Login to load patients</option>';
+            }
+        }
+
+        function clearPatientForm() {
+            ['pt-name', 'pt-dob', 'pt-gender', 'pt-contact', 'pt-email', 'pt-address', 'pt-notes'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        async function savePatient() {
+            const patientId = document.getElementById('patient-search-id').value.trim();
+            if (!patientId) {
+                alert('Please enter a Patient ID');
+                return;
+            }
+            if (!idToken) {
+                showMessage('patient-message', 'Please login first', 'error');
+                return;
+            }
+
+            const payload = {
+                name: document.getElementById('pt-name').value,
+                date_of_birth: document.getElementById('pt-dob').value || null,
+                gender: document.getElementById('pt-gender').value,
+                contact_number: document.getElementById('pt-contact').value,
+                email: document.getElementById('pt-email').value,
+                address: document.getElementById('pt-address').value,
+                medical_notes: document.getElementById('pt-notes').value
+            };
+
+            try {
+                const response = await fetch(`${API_ENDPOINT}/patients/${encodeURIComponent(patientId)}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('patient-message', `Patient "${patientId}" saved successfully!`, 'success');
+                    document.getElementById('patient-search-id').readOnly = true;
+                    document.getElementById('patient-detail-title').textContent = `Edit Patient: ${patientId}`;
+                    await loadPatientOptionsForPrediction();
+                    await loadPatientList();
+                    showPatientList();
+                    showMessage('patient-list-message', `Patient "${patientId}" updated successfully.`, 'success');
+                } else {
+                    showMessage('patient-message', `Error: ${data.error || 'Failed to save patient'}`, 'error');
+                }
+            } catch (error) {
+                showMessage('patient-message', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadStatistics() {
+            if (!idToken) {
+                showMessage('stats-message', 'Please login first', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_ENDPOINT}/stats`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${idToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showMessage('stats-message', `Error: ${data.error || 'Cannot load statistics'}`, 'error');
+                    return;
+                }
+
+                renderStatistics(data);
+                showMessage('stats-message', 'Statistics loaded', 'success');
+            } catch (error) {
+                showMessage('stats-message', `Network error: ${error.message}`, 'error');
+            }
+        }
+
+        function renderStatistics(data) {
+            const summary = data.summary || {};
+            const latest = data.latest_predictions || [];
+
+            const cards = [
+                { title: 'Total Predictions', value: summary.total_predictions ?? 0, cls: 'total' },
+                { title: 'Low Risk', value: `${summary.low_risk_count ?? 0} (${summary.low_risk_pct ?? 0}%)`, cls: 'low' },
+                { title: 'Medium Risk', value: `${summary.medium_risk_count ?? 0} (${summary.medium_risk_pct ?? 0}%)`, cls: 'medium' },
+                { title: 'High Risk', value: `${summary.high_risk_count ?? 0} (${summary.high_risk_pct ?? 0}%)`, cls: 'high' },
+                { title: 'Average Age', value: summary.avg_age ?? 0, cls: 'misc' },
+                { title: 'Average Cholesterol', value: summary.avg_chol ?? 0, cls: 'misc' },
+                { title: 'Avg Probability', value: summary.avg_probability ?? 0, cls: 'misc' }
+            ];
+
+            document.getElementById('stats-summary').innerHTML = cards.map(c => `
+                <div class="stat-card ${c.cls}">
+                    <div class="stat-title">${c.title}</div>
+                    <div class="stat-value">${c.value}</div>
+                </div>
+            `).join('');
+
+            const tableHtml = latest.map(item => {
+                const prob = Number(item.probability || 0);
+                const ts = item.created_at ? new Date(item.created_at).toLocaleString() : '-';
+                const outcome = item.outcome || '-';
+                const riskCls = outcome.toLowerCase().includes('high') ? 'badge-high' : outcome.toLowerCase().includes('medium') ? 'badge-medium' : 'badge-low';
+                return `
+                    <tr>
+                        <td><code style="font-size:12px;color:var(--gray-500)">${item.id || '-'}</code></td>
+                        <td>${item.patient_id || 'anonymous'}</td>
+                        <td><span class="badge ${riskCls}">${outcome}</span></td>
+                        <td><strong>${(prob * 100).toFixed(1)}%</strong></td>
+                        <td style="color:var(--gray-400);font-size:12px;">${ts}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('latest-table-body').innerHTML = tableHtml || '<tr><td colspan="5" style="text-align:center;color:var(--gray-400);padding:24px">No prediction data yet</td></tr>';
+
+            const ctx = document.getElementById('risk-chart').getContext('2d');
+            if (riskChart) {
+                riskChart.destroy();
+            }
+            riskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Low', 'Medium', 'High'],
+                    datasets: [{
+                        label: 'Risk Distribution',
+                        data: [
+                            summary.low_risk_count || 0,
+                            summary.medium_risk_count || 0,
+                            summary.high_risk_count || 0
+                        ],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Form submission
+        document.getElementById('prediction-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            if (!idToken) {
+                showMessage('result', 'Please login first', 'error');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const selectedPatientId = formData.get('patient_id');
+            if (!selectedPatientId) {
+                showMessage('result', 'Please select a patient', 'error');
+                return;
+            }
+            if (selectedPatientId === '__new__') {
+                showPatientView();
+                showPatientDetail(null, true);
+                showMessage('patient-message', 'Please create a new patient first, then run prediction.', 'error');
+                return;
+            }
+            const features = [
+                parseFloat(formData.get('age')),
+                parseFloat(formData.get('sex')),
+                parseFloat(formData.get('cp')),
+                parseFloat(formData.get('trestbps')),
+                parseFloat(formData.get('chol')),
+                parseFloat(formData.get('fbs')),
+                parseFloat(formData.get('restecg')),
+                parseFloat(formData.get('thalach')),
+                parseFloat(formData.get('exang'))
+            ];
+
+            const patientId = selectedPatientId;
+
+            try {
+                const response = await fetch(`${API_ENDPOINT}/predict`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${idToken}`
+                    },
+                    body: JSON.stringify({
+                        features: features,
+                        patient_id: patientId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const prob = result.probability;
+                    let riskLevel, riskCls, riskIcon;
+                    if (prob < 0.33) {
+                        riskLevel = 'Low Risk'; riskCls = 'low'; riskIcon = '✅';
+                    } else if (prob < 0.66) {
+                        riskLevel = 'Medium Risk'; riskCls = 'medium'; riskIcon = '⚠️';
+                    } else {
+                        riskLevel = 'High Risk'; riskCls = 'high'; riskIcon = '🚨';
+                    }
+                    const el = document.getElementById('result');
+                    el.className = '';
+                    el.innerHTML = `
+                        <div class="risk-result ${riskCls}">
+                            <div class="risk-badge">${riskIcon}</div>
+                            <div class="risk-info">
+                                <h4>${riskLevel}</h4>
+                                <p>Probability: <strong>${(prob * 100).toFixed(2)}%</strong></p>
+                                <p style="font-size:12px;margin-top:6px;">Prediction ID: ${escHtml(String(result.prediction_id || ''))}</p>
+                            </div>
+                        </div>`;
+                } else {
+                    showMessage('result', `Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('result', `Network error: ${error.message}`, 'error');
+            }
+        });
+
+        // Utility function to show messages
+        function showMessage(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = message;
+            element.className = `result ${type}`;
+        }
+
+        document.getElementById('patient-id').addEventListener('change', onPredictionPatientChange);
+        restoreSessionOnRefresh();
+    </script>
+</body>
+
+</html>

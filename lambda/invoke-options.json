@@ -1,0 +1,4 @@
+{
+  "httpMethod": "OPTIONS",
+  "path": "/stats"
+}

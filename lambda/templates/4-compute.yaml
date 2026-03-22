@@ -1,0 +1,80 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'HDPS (4/6) - IAM Role + Lambda (imports from stacks 1, 2, 3)'
+
+Parameters:
+  LambdaArtifactBucket:
+    Type: String
+
+  LambdaArtifactKey:
+    Type: String
+
+  RDSPassword:
+    Type: String
+    NoEcho: true
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        - arn:aws:iam::aws:policy/AmazonRDSFullAccess
+
+  LambdaSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Lambda SG for access to RDS
+      VpcId: !ImportValue hdps-VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  LambdaToDBIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !ImportValue hdps-DBSecurityGroupId
+      IpProtocol: tcp
+      FromPort: 3306
+      ToPort: 3306
+      SourceSecurityGroupId: !Ref LambdaSecurityGroup
+
+  PredictionLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.9
+      Handler: lambda_function.lambda_handler
+      Code:
+        S3Bucket: !Ref LambdaArtifactBucket
+        S3Key: !Ref LambdaArtifactKey
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30
+      MemorySize: 512
+      VpcConfig:
+        SubnetIds:
+          - !ImportValue hdps-PublicSubnet1Id
+          - !ImportValue hdps-PublicSubnet2Id
+        SecurityGroupIds:
+          - !Ref LambdaSecurityGroup
+      Environment:
+        Variables:
+          RDS_HOST: !ImportValue hdps-DBEndpointAddress
+          RDS_PORT: !ImportValue hdps-DBEndpointPort
+          RDS_PASSWORD: !Ref RDSPassword
+          S3_BUCKET_NAME: !ImportValue hdps-ResultsBucketName
+          SNS_TOPIC_ARN: !ImportValue hdps-SNSTopicArn
+
+Outputs:
+  LambdaArn:
+    Value: !GetAtt PredictionLambda.Arn
+    Export:
+      Name: hdps-LambdaArn
