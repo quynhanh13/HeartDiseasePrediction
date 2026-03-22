@@ -1,5 +1,0 @@
-{
-  "httpMethod": "POST",
-  "path": "/predict",
-  "body": "{\"features\":[50,1,2,140,200,0,1,150,0],\"patient_id\":\"debug-user\"}"
-}

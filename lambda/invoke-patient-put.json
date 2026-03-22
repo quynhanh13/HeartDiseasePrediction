@@ -1,1 +1,0 @@
-{"httpMethod":"PUT","path":"/patients/P001","body":"{\"name\":\"Nguyen Van A\",\"gender\":\"Male\",\"medical_notes\":\"Hypertension\"}"}
