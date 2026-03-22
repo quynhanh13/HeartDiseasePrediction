@@ -559,6 +559,50 @@
                 <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
             </div>
             <button class="btn-primary-full" onclick="login()">Sign In</button>
+            <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+                <button type="button" class="btn-sm btn-secondary" style="width:auto;"
+                    onclick="showForgotPassword()">Forgot password?</button>
+            </div>
+
+            <div id="forgot-password-section" class="hidden" style="margin-top:16px;">
+                <div class="form-group">
+                    <label for="fp-username">Username / Email</label>
+                    <input type="text" id="fp-username" placeholder="doctor@example.com">
+                </div>
+                <button type="button" class="btn-primary-full" onclick="sendResetCode()">Send Reset Code</button>
+                <button type="button" class="btn-sm btn-secondary" style="margin-top:8px;"
+                    onclick="backToLoginAuthFlows()">Back</button>
+            </div>
+
+            <div id="reset-password-section" class="hidden" style="margin-top:16px;">
+                <div class="form-group">
+                    <label for="rp-username">Username</label>
+                    <input type="text" id="rp-username" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="rp-code">Verification Code</label>
+                    <input type="text" id="rp-code" placeholder="Enter code from email">
+                </div>
+                <div class="form-group">
+                    <label for="rp-new-password">New Password</label>
+                    <input type="password" id="rp-new-password" placeholder="Enter new password">
+                </div>
+                <button type="button" class="btn-primary-full" onclick="confirmResetPassword()">Confirm Reset
+                    Password</button>
+                <button type="button" class="btn-sm btn-secondary" style="margin-top:8px;"
+                    onclick="backToLoginAuthFlows()">Back</button>
+            </div>
+
+            <div id="force-change-section" class="hidden" style="margin-top:16px;">
+                <div class="form-group">
+                    <label for="fc-new-password">Set New Password</label>
+                    <input type="password" id="fc-new-password" placeholder="Enter your new password">
+                </div>
+                <button type="button" class="btn-primary-full" onclick="completeForceChangePassword()">Update
+                    Password</button>
+                <button type="button" class="btn-sm btn-secondary" style="margin-top:8px;"
+                    onclick="backToLoginAuthFlows()">Back</button>
+            </div>
             <div id="auth-message" style="margin-top:16px;"></div>
         </div>
 
@@ -838,6 +882,8 @@
         let cognitoUser = null;
         let idToken = null;
         let riskChart = null;
+        let resetUsername = '';
+        let pendingChallengeUserAttributes = null;
 
         // Login function
         async function login() {
@@ -864,8 +910,17 @@
             cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
 
             try {
-                const result = await authenticateUser(cognitoUser, authenticationDetails);
-                idToken = result.getIdToken().getJwtToken();
+                const authResult = await authenticateUser(cognitoUser, authenticationDetails);
+                if (authResult.challenge === 'NEW_PASSWORD_REQUIRED') {
+                    pendingChallengeUserAttributes = authResult.userAttributes || {};
+                    document.getElementById('force-change-section').classList.remove('hidden');
+                    document.getElementById('forgot-password-section').classList.add('hidden');
+                    document.getElementById('reset-password-section').classList.add('hidden');
+                    showMessage('auth-message', 'Your account requires a new password before continuing.', 'error');
+                    return;
+                }
+
+                idToken = authResult.result.getIdToken().getJwtToken();
 
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('app-section').classList.remove('hidden');
@@ -873,8 +928,118 @@
                 showPredictionView();
                 await loadPatientOptionsForPrediction();
             } catch (error) {
+                if (error && (error.code === 'PasswordResetRequiredException' || String(error.message || '').toLowerCase().includes('password reset required'))) {
+                    document.getElementById('fp-username').value = username;
+                    showForgotPassword();
+                    sendResetCode();
+                    return;
+                }
                 showMessage('auth-message', `Login failed: ${error.message}`, 'error');
             }
+        }
+
+        function showForgotPassword() {
+            document.getElementById('forgot-password-section').classList.remove('hidden');
+            document.getElementById('reset-password-section').classList.add('hidden');
+            document.getElementById('force-change-section').classList.add('hidden');
+            const seed = (document.getElementById('username').value || '').trim();
+            if (seed) {
+                document.getElementById('fp-username').value = seed;
+            }
+            showMessage('auth-message', 'Enter your username/email to receive a verification code.', 'success');
+        }
+
+        function backToLoginAuthFlows() {
+            document.getElementById('forgot-password-section').classList.add('hidden');
+            document.getElementById('reset-password-section').classList.add('hidden');
+            document.getElementById('force-change-section').classList.add('hidden');
+            document.getElementById('rp-code').value = '';
+            document.getElementById('rp-new-password').value = '';
+            document.getElementById('fc-new-password').value = '';
+        }
+
+        function sendResetCode() {
+            const username = (document.getElementById('fp-username').value || document.getElementById('username').value || '').trim();
+            if (!username) {
+                showMessage('auth-message', 'Please enter username/email.', 'error');
+                return;
+            }
+
+            const userData = {
+                Username: username,
+                Pool: userPool
+            };
+            const resetUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+            resetUser.forgotPassword({
+                onFailure: (err) => {
+                    showMessage('auth-message', `Cannot send code: ${err.message || JSON.stringify(err)}`, 'error');
+                },
+                inputVerificationCode: () => {
+                    resetUsername = username;
+                    document.getElementById('rp-username').value = username;
+                    document.getElementById('forgot-password-section').classList.add('hidden');
+                    document.getElementById('reset-password-section').classList.remove('hidden');
+                    showMessage('auth-message', 'Verification code sent. Check your email.', 'success');
+                }
+            });
+        }
+
+        function confirmResetPassword() {
+            const username = (document.getElementById('rp-username').value || resetUsername).trim();
+            const code = document.getElementById('rp-code').value.trim();
+            const newPassword = document.getElementById('rp-new-password').value;
+
+            if (!username || !code || !newPassword) {
+                showMessage('auth-message', 'Please fill username, verification code, and new password.', 'error');
+                return;
+            }
+
+            const userData = {
+                Username: username,
+                Pool: userPool
+            };
+            const resetUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+            resetUser.confirmPassword(code, newPassword, {
+                onSuccess: () => {
+                    backToLoginAuthFlows();
+                    document.getElementById('username').value = username;
+                    document.getElementById('password').value = '';
+                    showMessage('auth-message', 'Password reset successful. Please sign in.', 'success');
+                },
+                onFailure: (err) => {
+                    showMessage('auth-message', `Reset failed: ${err.message || JSON.stringify(err)}`, 'error');
+                }
+            });
+        }
+
+        function completeForceChangePassword() {
+            const newPassword = document.getElementById('fc-new-password').value;
+            if (!cognitoUser) {
+                showMessage('auth-message', 'No pending authentication challenge.', 'error');
+                return;
+            }
+            if (!newPassword) {
+                showMessage('auth-message', 'Please enter a new password.', 'error');
+                return;
+            }
+
+            cognitoUser.completeNewPasswordChallenge(newPassword, {}, {
+                onSuccess: async (session) => {
+                    idToken = session.getIdToken().getJwtToken();
+                    pendingChallengeUserAttributes = null;
+                    backToLoginAuthFlows();
+                    document.getElementById('auth-section').classList.add('hidden');
+                    document.getElementById('app-section').classList.remove('hidden');
+                    document.getElementById('logout-btn').classList.remove('hidden');
+                    showPredictionView();
+                    await loadPatientOptionsForPrediction();
+                },
+                onFailure: (err) => {
+                    showMessage('auth-message', `Update password failed: ${err.message || JSON.stringify(err)}`, 'error');
+                }
+            });
         }
 
         function setActiveTab(tab) {
@@ -1047,7 +1212,8 @@
         function authenticateUser(cognitoUser, authenticationDetails) {
             return new Promise((resolve, reject) => {
                 cognitoUser.authenticateUser(authenticationDetails, {
-                    onSuccess: resolve,
+                    onSuccess: (result) => resolve({ challenge: 'SUCCESS', result }),
+                    newPasswordRequired: (userAttributes) => resolve({ challenge: 'NEW_PASSWORD_REQUIRED', userAttributes }),
                     onFailure: reject
                 });
             });
@@ -1098,6 +1264,8 @@
             document.getElementById('patient-search-id').readOnly = false;
             document.getElementById('patient-message').classList.add('hidden');
             clearPatientForm();
+            backToLoginAuthFlows();
+            pendingChallengeUserAttributes = null;
             const patientSelect = document.getElementById('patient-id');
             if (patientSelect) {
                 patientSelect.innerHTML = '<option value="">Login to load patients</option>';
