@@ -248,9 +248,9 @@ deploy_one() {
     [[ "${#params[@]}" -gt 0 ]] && cmd+=(--parameter-overrides "${params[@]}")
 
     if "${cmd[@]}"; then
-        log "✅ $full — OK"
+        log "$full — OK"
     else
-        error "❌ $full — FAILED"
+        error "$full — FAILED"
         # Print CloudFormation failure events for quick debug
         aws cloudformation describe-stack-events \
             --stack-name "$full" --region "$REGION" \
