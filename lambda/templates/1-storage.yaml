@@ -7,10 +7,6 @@ Parameters:
     Default: dev
 
 Resources:
-  PredictionResultsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub '${EnvironmentName}-results-${AWS::AccountId}-${AWS::Region}'
 
   FrontendBucket:
     Type: AWS::S3::Bucket
@@ -18,10 +14,6 @@ Resources:
       BucketName: !Sub '${EnvironmentName}-frontend-${AWS::AccountId}-${AWS::Region}'
 
 Outputs:
-  ResultsBucketName:
-    Value: !Ref PredictionResultsBucket
-    Export:
-      Name: hdps-ResultsBucketName
 
   FrontendBucketName:
     Value: !Ref FrontendBucket
